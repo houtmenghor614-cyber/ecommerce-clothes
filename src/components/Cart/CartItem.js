@@ -37,9 +37,19 @@ const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
       
       <div className="flex items-center space-x-4 mt-2 md:mt-0">
         <div className="flex items-center space-x-2">
-         
+          <button
+            onClick={() => onUpdateQuantity(item, item.quantity - 1)}
+            className="w-8 h-8 border rounded-lg flex items-center justify-center hover:bg-gray-100"
+          >
+            -
+          </button>
           <span className="w-12 text-center">{item.quantity}</span>
-         
+          <button
+            onClick={() => onUpdateQuantity(item, item.quantity + 1)}
+            className="w-8 h-8 border rounded-lg flex items-center justify-center hover:bg-gray-100"
+          >
+            +
+          </button>
         </div>
         
         <p className="font-semibold w-20 text-right">${itemTotal.toFixed(2)}</p>
