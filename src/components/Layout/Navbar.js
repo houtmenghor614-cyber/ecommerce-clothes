@@ -12,6 +12,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const dropdownRef = useRef(null);
 
@@ -55,8 +56,17 @@ const Navbar = () => {
     setIsCategoriesOpen(!isCategoriesOpen);
   };
 
+  const toggleMobileCategories = () => {
+    setIsMobileCategoriesOpen(!isMobileCategoriesOpen);
+  };
+
   const closeCategories = () => {
     setIsCategoriesOpen(false);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMenuOpen(false);
+    setIsMobileCategoriesOpen(false);
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -80,7 +90,7 @@ const Navbar = () => {
               <i className="fas fa-store text-white text-sm"></i>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Menghor Clothes
+              DYNA STORE
             </span>
           </Link>
 
@@ -183,20 +193,24 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
-            <Link to="/" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={() => setIsMenuOpen(false)}>Home</Link>
+            <Link to="/" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={closeMobileMenu}>Home</Link>
             
             {/* Mobile Categories Section */}
             <div className="py-2">
               <button
-                onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                onClick={toggleMobileCategories}
                 className="w-full flex justify-between items-center py-2 text-gray-600"
               >
                 <span>Shop</span>
-                <i className={`fas fa-chevron-down transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`}></i>
+                <i className={`fas fa-chevron-down transition-transform duration-200 ${isMobileCategoriesOpen ? 'rotate-180' : ''}`}></i>
               </button>
-              {isCategoriesOpen && (
+              {isMobileCategoriesOpen && (
                 <div className="pl-4 mt-1 space-y-1">
-                  <Link to="/products" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={() => setIsMenuOpen(false)}>
+                  <Link 
+                    to="/products" 
+                    className="block py-2 text-gray-600 hover:text-indigo-600" 
+                    onClick={closeMobileMenu}
+                  >
                     All Products
                   </Link>
                   {categories.map((category) => (
@@ -204,7 +218,7 @@ const Navbar = () => {
                       key={category.id}
                       to={`/products?category=${category.id}`}
                       className="block py-2 text-gray-600 hover:text-indigo-600"
-                      onClick={() => setIsMenuOpen(false)}
+                      onClick={closeMobileMenu}
                     >
                       {category.name}
                     </Link>
@@ -213,26 +227,26 @@ const Navbar = () => {
               )}
             </div>
             
-            <Link to="/about" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={() => setIsMenuOpen(false)}>About</Link>
-            <Link to="/contact" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+            <Link to="/about" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={closeMobileMenu}>About</Link>
+            <Link to="/contact" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={closeMobileMenu}>Contact</Link>
             
-            {user && <Link to="/orders" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={() => setIsMenuOpen(false)}>My Orders</Link>}
-            <Link to="/cart" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={() => setIsMenuOpen(false)}>Cart ({cartCount})</Link>
+            {user && <Link to="/orders" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={closeMobileMenu}>My Orders</Link>}
+            <Link to="/cart" className="block py-2 text-gray-600 hover:text-indigo-600" onClick={closeMobileMenu}>Cart ({cartCount})</Link>
             
             <div className="pt-4 mt-2 border-t border-gray-100">
               {user ? (
-                <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full text-left py-2 text-gray-600">
+                <button onClick={() => { handleLogout(); closeMobileMenu(); }} className="w-full text-left py-2 text-gray-600">
                   <i className="fas fa-sign-out-alt mr-2"></i> Sign Out
                 </button>
               ) : (
-                <Link to="/login" className="block py-2 text-gray-600" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
+                <Link to="/login" className="block py-2 text-gray-600" onClick={closeMobileMenu}>Sign In</Link>
               )}
             </div>
           </div>
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
