@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+  BASE_URL: process.env.REACT_APP_API_URL || 'https://backend-ecommerce-6hef.onrender.com/api',
   TIMEOUT: 30000,
 };
 
