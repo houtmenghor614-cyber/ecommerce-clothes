@@ -60,11 +60,7 @@ function App() {
                     <PaymentSuccess />
                   </PrivateRoute>
                 } />
-                import About from './components/About/About';
-import Contact from './components/Contact/Contact';
-
-// Add these routes inside your <Routes>
-<Route path="/about" element={<About />} />
+                <Route path="/about" element={<About />} />
 <Route path="/contact" element={<Contact />} />
               </Routes>
             </Layout>
