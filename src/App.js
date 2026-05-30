@@ -17,6 +17,8 @@ import OrderList from './components/Orders/OrderList';
 import OrderDetail from './components/Orders/OrderDetail';
 import PaymentQR from './components/Payment/PaymentQR';
 import PaymentSuccess from './components/Payment/PaymentSuccess';
+import About from './components/About/About';
+import Contact from './components/Contact/Contact';
 
 function App() {
   return (
@@ -37,6 +39,7 @@ function App() {
                     <Checkout />
                   </PrivateRoute>
                 } />
+                
                 <Route path="/orders" element={
                   <PrivateRoute>
                     <OrderList />
@@ -57,6 +60,12 @@ function App() {
                     <PaymentSuccess />
                   </PrivateRoute>
                 } />
+                import About from './components/About/About';
+import Contact from './components/Contact/Contact';
+
+// Add these routes inside your <Routes>
+<Route path="/about" element={<About />} />
+<Route path="/contact" element={<Contact />} />
               </Routes>
             </Layout>
             <Toaster position="top-right" />
