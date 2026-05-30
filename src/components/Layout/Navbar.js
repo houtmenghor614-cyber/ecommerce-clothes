@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { getCategories } from '../../services/productService';
+import About from '../About/About';
+import Contact from '../Contact/Contact';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
