@@ -6,7 +6,7 @@ const ProductCard = ({ product }) => {
     ? Math.round(((product.original_price - product.discount_price) / product.original_price) * 100)
     : 0;
   
-  const BASE_URL = 'http://127.0.0.1:8000';
+  const BASE_URL = 'https://backend-ecommerce-6hef.onrender.com';
   const imageUrl = product.main_image ? `${BASE_URL}${product.main_image}` : null;
   
   return (
