@@ -41,14 +41,14 @@ const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
             onClick={() => onUpdateQuantity(item, item.quantity - 1)}
             className="w-8 h-8 border rounded-lg flex items-center justify-center hover:bg-gray-100"
           >
-            -
+            
           </button>
           <span className="w-12 text-center">{item.quantity}</span>
           <button
             onClick={() => onUpdateQuantity(item, item.quantity + 1)}
             className="w-8 h-8 border rounded-lg flex items-center justify-center hover:bg-gray-100"
           >
-            +
+            
           </button>
         </div>
         
