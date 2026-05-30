@@ -1,33 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getCategories } from '../../services/productService';
 
 const CategoryNav = () => {
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
-  const [showScrollButtons, setShowScrollButtons] = useState(false);
-  const scrollContainerRef = useRef(null);
   const location = useLocation();
 
   useEffect(() => {
     loadCategories();
-    checkScroll();
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
   }, []);
 
+  // Get category from URL params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const categoryId = params.get('category');
     if (categoryId) {
       setActiveCategory(parseInt(categoryId));
-      // Scroll to active category
-      setTimeout(() => {
-        const activeElement = document.querySelector(`.category-item-${categoryId}`);
-        if (activeElement && scrollContainerRef.current) {
-          activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }
-      }, 100);
     } else {
       setActiveCategory(null);
     }
@@ -39,20 +28,6 @@ const CategoryNav = () => {
       setCategories(data);
     } catch (error) {
       console.error('Failed to load categories:', error);
-    }
-  };
-
-  const checkScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollWidth, clientWidth } = scrollContainerRef.current;
-      setShowScrollButtons(scrollWidth > clientWidth);
-    }
-  };
-
-  const scroll = (direction) => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -200 : 200;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
@@ -69,32 +44,21 @@ const CategoryNav = () => {
     <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="relative">
-          {/* Scroll Left Button */}
-          {showScrollButtons && (
-            <button
-              onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center z-20 hover:bg-gray-100 transition md:hidden"
-              style={{ marginLeft: '-8px' }}
-            >
-              <i className="fas fa-chevron-left text-gray-600 text-sm"></i>
-            </button>
-          )}
-
+          {/* Gradient overlays for scroll indication */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10"></div>
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10"></div>
+          
           {/* Scrollable categories */}
-          <div
-            ref={scrollContainerRef}
-            className="overflow-x-auto scrollbar-hide py-3"
-            style={{ scrollBehavior: 'smooth' }}
-          >
-            <div className="flex items-center gap-2 min-w-max px-1">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1 py-3 min-w-max">
               {/* All Products Link */}
               <Link
                 to="/products"
                 onClick={() => setActiveCategory(null)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 touch-manipulation ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   !activeCategory
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <i className="fas fa-border-all text-xs"></i>
@@ -106,12 +70,12 @@ const CategoryNav = () => {
                 <Link
                   key={category.id}
                   to={`/products?category=${category.id}`}
-                  className={`category-item-${category.id} flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap touch-manipulation ${
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     activeCategory === category.id
                       ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      : 'text-gray-600 hover:bg-gray-100'
                   }`}
-                  style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
                   <i className={`fas ${categoryIcons[category.name] || 'fa-tag'} text-xs`}></i>
                   <span>{category.name}</span>
@@ -119,17 +83,6 @@ const CategoryNav = () => {
               ))}
             </div>
           </div>
-
-          {/* Scroll Right Button */}
-          {showScrollButtons && (
-            <button
-              onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center z-20 hover:bg-gray-100 transition md:hidden"
-              style={{ marginRight: '-8px' }}
-            >
-              <i className="fas fa-chevron-right text-gray-600 text-sm"></i>
-            </button>
-          )}
         </div>
       </div>
 
@@ -141,14 +94,6 @@ const CategoryNav = () => {
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;
-        }
-        .touch-manipulation {
-          touch-action: manipulation;
-        }
-        @media (max-width: 768px) {
-          .category-item {
-            padding: 8px 16px;
-          }
         }
       `}</style>
     </div>
