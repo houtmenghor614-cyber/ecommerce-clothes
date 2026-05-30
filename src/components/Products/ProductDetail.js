@@ -1,5 +1,5 @@
-// src/components/Products/ProductDetail.js
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { getProduct } from '../../services/productService';
@@ -14,14 +14,14 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [maxStock, setMaxStock] = useState(0);
   const [mainImage, setMainImage] = useState('');
   const [allImages, setAllImages] = useState([]);
   const [colorsArray, setColorsArray] = useState([]);
   const [sizesArray, setSizesArray] = useState([]);
   const [sizeStockMap, setSizeStockMap] = useState({});
-  const [activeTab, setActiveTab] = useState('description');
 
-  const BASE_URL = 'https://menghor-store-backend.onrender.com';
+  const BASE_URL = 'http://127.0.0.1:8000';
 
   useEffect(() => {
     if (id) {
@@ -66,6 +66,7 @@ const ProductDetail = () => {
       }
       setSizesArray(sizes);
       
+      // Parse size stock
       if (data.size_stock) {
         try {
           stockMap = JSON.parse(data.size_stock);
@@ -73,6 +74,8 @@ const ProductDetail = () => {
         } catch {
           setSizeStockMap({});
         }
+      } else {
+        setSizeStockMap({});
       }
       
       // Set main image
@@ -101,7 +104,14 @@ const ProductDetail = () => {
         setSelectedColor(colors[0]);
       }
       if (sizes.length > 0) {
-        setSelectedSize(sizes[0]);
+        const firstSize = sizes[0];
+        setSelectedSize(firstSize);
+        // Set max stock based on selected size
+        const stockForSize = stockMap[firstSize] || data.stock || 0;
+        setMaxStock(stockForSize);
+        setQuantity(1);
+      } else {
+        setMaxStock(data.stock || 0);
       }
     } catch (error) {
       console.error('Failed to load product:', error);
@@ -109,6 +119,29 @@ const ProductDetail = () => {
       navigate('/products');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Update max stock when size changes
+  const handleSizeChange = (size) => {
+    setSelectedSize(size);
+    const stockForSize = sizeStockMap[size] || product?.stock || 0;
+    setMaxStock(stockForSize);
+    // Reset quantity to 1 if current quantity exceeds new max stock
+    if (quantity > stockForSize) {
+      setQuantity(stockForSize > 0 ? 1 : 0);
+    }
+  };
+
+  // Update quantity with stock limit
+  const updateQuantity = (newQuantity) => {
+    if (newQuantity < 1) {
+      setQuantity(1);
+    } else if (newQuantity > maxStock) {
+      setQuantity(maxStock);
+      toast.error(`Only ${maxStock} items available in stock`);
+    } else {
+      setQuantity(newQuantity);
     }
   };
 
@@ -124,9 +157,54 @@ const ProductDetail = () => {
       return;
     }
     
+    // Check if quantity exceeds stock
+    if (quantity > maxStock) {
+      toast.error(`Only ${maxStock} items available`);
+      return;
+    }
+    
+    if (maxStock === 0) {
+      toast.error('Out of stock');
+      return;
+    }
+    
     addToCart(product, quantity, selectedColor, selectedSize);
     toast.success('Added to cart!');
   };
+
+  const handleQuantityChange = (e) => {
+    let val = parseInt(e.target.value);
+    if (isNaN(val)) val = 1;
+    if (val < 1) val = 1;
+    if (val > maxStock) val = maxStock;
+    setQuantity(val);
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p className="mt-2 text-gray-500">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p className="text-gray-500">Product not found</p>
+        <Link to="/products" className="text-indigo-600 hover:underline mt-4 inline-block">
+          Back to Products
+        </Link>
+      </div>
+    );
+  }
+
+  const discountPercent = product.discount_price 
+    ? Math.round(((product.original_price - product.discount_price) / product.original_price) * 100)
+    : 0;
 
   const getColorStyle = (colorName) => {
     const colorMap = {
@@ -141,76 +219,50 @@ const ProductDetail = () => {
     return { backgroundColor: lowerColor, border: '1px solid #ddd' };
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-500">Loading product...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return null;
-  }
-
-  const discountPercent = product.discount_price 
-    ? Math.round(((product.original_price - product.discount_price) / product.original_price) * 100)
-    : 0;
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Link to="/" className="hover:text-indigo-600 transition">Home</Link>
-          <i className="fas fa-chevron-right text-xs"></i>
-          <Link to="/products" className="hover:text-indigo-600 transition">Products</Link>
-          <i className="fas fa-chevron-right text-xs"></i>
-          <span className="text-gray-800">{product.title}</span>
-        </div>
+      <div className="mb-4 text-sm text-gray-500">
+        <Link to="/" className="hover:text-indigo-600">Home</Link>
+        <span className="mx-2">/</span>
+        <Link to="/products" className="hover:text-indigo-600">Products</Link>
+        <span className="mx-2">/</span>
+        <span className="text-gray-700">{product.title}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Product Images Gallery */}
+        {/* Product Images */}
         <div className="lg:w-1/2">
-          <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-            <div className="aspect-square">
-              {mainImage ? (
-                <img
-                  src={mainImage}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  <i className="fas fa-image text-6xl text-gray-300"></i>
-                </div>
-              )}
-            </div>
+          <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
+            {mainImage ? (
+              <img
+                src={mainImage}
+                alt={product.title}
+                className="w-full h-auto object-cover"
+              />
+            ) : (
+              <div className="w-full h-96 bg-gray-100 flex items-center justify-center">
+                <i className="fas fa-image text-6xl text-gray-400"></i>
+              </div>
+            )}
           </div>
           
-          {/* Thumbnail Gallery */}
           {allImages.length > 1 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
               {allImages.map((img, index) => (
-                <button
+                <div
                   key={index}
-                  onClick={() => setMainImage(img)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                    mainImage === img 
-                      ? 'border-indigo-600 shadow-lg scale-105' 
-                      : 'border-gray-200 hover:border-indigo-400'
+                  className={`flex-shrink-0 cursor-pointer border-2 rounded-lg overflow-hidden transition ${
+                    mainImage === img ? 'border-indigo-600 shadow-md' : 'border-gray-200 hover:border-indigo-400'
                   }`}
+                  onClick={() => setMainImage(img)}
                 >
                   <img
                     src={img}
                     alt={`${product.title} view ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-20 h-20 object-cover"
                   />
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -220,41 +272,34 @@ const ProductDetail = () => {
         <div className="lg:w-1/2">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">{product.title}</h1>
           
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center gap-1">
-              <i className="fas fa-star text-yellow-400"></i>
-              <i className="fas fa-star text-yellow-400"></i>
-              <i className="fas fa-star text-yellow-400"></i>
-              <i className="fas fa-star text-yellow-400"></i>
-              <i className="fas fa-star-half-alt text-yellow-400"></i>
-            </div>
-            <span className="text-sm text-gray-500">(128 reviews)</span>
-            {product.category_name && (
-              <>
-                <span className="text-gray-300">|</span>
-                <span className="text-sm text-indigo-600">{product.category_name}</span>
-              </>
-            )}
-          </div>
+          {product.category_name && (
+            <p className="text-gray-500 mb-4">
+              Category: <span className="text-indigo-600">{product.category_name}</span>
+            </p>
+          )}
           
-          {/* Price */}
-          <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-4">
             {product.discount_price ? (
-              <div className="flex items-center gap-3">
+              <>
                 <span className="text-3xl font-bold text-indigo-600">${product.discount_price}</span>
                 <span className="text-gray-400 line-through text-xl">${product.original_price}</span>
-                <span className="bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-semibold">
+                <span className="bg-red-500 text-white px-2 py-1 rounded text-sm font-semibold">
                   Save {discountPercent}%
                 </span>
-              </div>
+              </>
             ) : (
               <span className="text-3xl font-bold text-indigo-600">${product.original_price}</span>
             )}
           </div>
           
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-700 mb-2">Description</h3>
+            <p className="text-gray-600 leading-relaxed">{product.description || 'No description available.'}</p>
+          </div>
+          
           {/* Colors */}
           {colorsArray.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Color: <span className="font-semibold text-indigo-600">{selectedColor}</span>
               </label>
@@ -262,6 +307,7 @@ const ProductDetail = () => {
                 {colorsArray.map((color) => (
                   <button
                     key={color}
+                    type="button"
                     onClick={() => setSelectedColor(color)}
                     className={`relative w-10 h-10 rounded-full transition-all duration-200 ${
                       selectedColor === color ? 'ring-2 ring-offset-2 ring-indigo-600 scale-110' : 'hover:scale-105'
@@ -280,9 +326,9 @@ const ProductDetail = () => {
             </div>
           )}
           
-          {/* Sizes with Stock */}
+          {/* Sizes with Stock Display */}
           {sizesArray.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Size: <span className="font-semibold text-indigo-600">{selectedSize}</span>
               </label>
@@ -294,129 +340,97 @@ const ProductDetail = () => {
                   return (
                     <button
                       key={size}
-                      onClick={() => !isOutOfStock && setSelectedSize(size)}
+                      type="button"
+                      onClick={() => !isOutOfStock && handleSizeChange(size)}
                       disabled={isOutOfStock}
-                      className={`relative w-12 h-12 border rounded-xl transition font-medium ${
+                      className={`relative w-14 h-14 border rounded-lg transition font-medium ${
                         selectedSize === size
-                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
+                          ? 'border-indigo-600 bg-indigo-600 text-white'
                           : isOutOfStock
-                          ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'border-gray-300 hover:border-indigo-600 hover:text-indigo-600'
                       }`}
                     >
                       {size}
                       {isOutOfStock && (
-                        <span className="absolute -top-2 -right-2 text-[10px] bg-red-500 text-white rounded-full px-1">
-                          out
+                        <span className="absolute -top-2 -right-2 text-xs bg-red-500 text-white rounded-full px-1">
+                          sold out
                         </span>
                       )}
                     </button>
                   );
                 })}
               </div>
-              {selectedSize && sizeStockMap[selectedSize] > 0 && (
-                <p className="text-sm text-green-600 mt-2">
-                  ✓ In stock ({sizeStockMap[selectedSize]} available)
+              {selectedSize && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Stock available: <strong className="text-indigo-600">{sizeStockMap[selectedSize] || 0}</strong> items
                 </p>
               )}
             </div>
           )}
           
-          {/* Quantity */}
+          {/* Quantity with Stock Limit - FIXED */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-            <div className="flex items-center gap-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quantity (Max: {maxStock})
+            </label>
+            <div className="flex items-center space-x-3">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-10 h-10 border border-gray-300 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"
+                type="button"
+                onClick={() => updateQuantity(quantity - 1)}
+                disabled={quantity <= 1}
+                className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 -
               </button>
-              <span className="w-16 text-center text-lg font-semibold">{quantity}</span>
+              <input
+                type="number"
+                value={quantity}
+                onChange={handleQuantityChange}
+                min="1"
+                max={maxStock}
+                className="w-20 text-center text-lg font-semibold border border-gray-300 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-10 h-10 border border-gray-300 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"
+                type="button"
+                onClick={() => updateQuantity(quantity + 1)}
+                disabled={quantity >= maxStock}
+                className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 +
               </button>
             </div>
+            {maxStock === 0 && (
+              <p className="text-red-500 text-sm mt-2">This size is out of stock</p>
+            )}
+          </div>
+          
+          {/* Stock Status */}
+          <div className="mb-4">
+            {maxStock > 0 ? (
+              <p className="text-green-600 font-semibold flex items-center gap-2">
+                <i className="fas fa-check-circle"></i> In Stock ({maxStock} available)
+              </p>
+            ) : (
+              <p className="text-red-600 font-semibold flex items-center gap-2">
+                <i className="fas fa-times-circle"></i> Out of Stock
+              </p>
+            )}
           </div>
           
           {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
-            className="w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition-all duration-300 font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+            disabled={maxStock === 0}
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <i className="fas fa-shopping-cart"></i>
-            Add to Cart
+            {maxStock === 0 ? 'Out of Stock' : 'Add to Cart'}
           </button>
           
-          {/* Tabs */}
-          <div className="mt-8 border-t border-gray-200">
-            <div className="flex gap-6">
-              <button
-                onClick={() => setActiveTab('description')}
-                className={`py-3 text-sm font-medium transition relative ${
-                  activeTab === 'description' 
-                    ? 'text-indigo-600' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Description
-                {activeTab === 'description' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('shipping')}
-                className={`py-3 text-sm font-medium transition relative ${
-                  activeTab === 'shipping' 
-                    ? 'text-indigo-600' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Shipping Info
-                {activeTab === 'shipping' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('returns')}
-                className={`py-3 text-sm font-medium transition relative ${
-                  activeTab === 'returns' 
-                    ? 'text-indigo-600' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Returns
-                {activeTab === 'returns' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                )}
-              </button>
-            </div>
-            
-            <div className="py-4">
-              {activeTab === 'description' && (
-                <p className="text-gray-600 leading-relaxed">
-                  {product.description || 'No description available.'}
-                </p>
-              )}
-              {activeTab === 'shipping' && (
-                <div className="space-y-3 text-gray-600">
-                  <p>📦 Free shipping on orders over $50</p>
-                  <p>🚚 Delivery within 3-5 business days</p>
-                  <p>📍 Worldwide shipping available</p>
-                </div>
-              )}
-              {activeTab === 'returns' && (
-                <div className="space-y-3 text-gray-600">
-                  <p>🔄 30-day easy returns</p>
-                  <p>💯 Money-back guarantee</p>
-                  <p>📞 Contact our support for returns</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <Link to="/products" className="block text-center mt-4 text-indigo-600 hover:text-indigo-700">
+            ← Back to Products
+          </Link>
         </div>
       </div>
     </div>
