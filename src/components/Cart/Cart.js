@@ -44,7 +44,6 @@ const Cart = () => {
                 key={`${item.id}-${item.selectedColor}-${item.selectedSize}`}
                 item={item}
                 onRemove={removeFromCart}
-                onUpdateQuantity={updateQuantity}
               />
             ))}
           </div>
