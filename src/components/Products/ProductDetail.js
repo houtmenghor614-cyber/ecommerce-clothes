@@ -95,7 +95,7 @@ const ProductDetail = () => {
           subImgs = data.sub_images;
         }
       }
-      const fullSubImgs = subImgs.map(img => img.startsWith('http') ? img : `${BASE_URL}${img}`);
+      const fullSubImgs = subImgs.map(img => img.startsWith('https://backend-ecommerce-6hef.onrender.com') ? img : `${BASE_URL}${img}`);
       const allImgs = [mainImg, ...fullSubImgs].filter(img => img);
       setAllImages(allImgs);
       
