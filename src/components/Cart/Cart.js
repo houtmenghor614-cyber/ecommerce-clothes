@@ -41,8 +41,6 @@ const Cart = () => {
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             {cart.map((item) => (
               <CartItem
-                key={`${item.id}-${item.selectedColor}-${item.selectedSize}`}
-                item={item}
                 onRemove={removeFromCart}
               />
             ))}
