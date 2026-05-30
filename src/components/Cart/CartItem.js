@@ -4,7 +4,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
   const price = item.discount_price || item.original_price;
   const itemTotal = price * item.quantity;
   
-  const BASE_URL = 'http://127.0.0.1:8000';
+  const BASE_URL = 'https://backend-ecommerce-6hef.onrender.com';
   const imageUrl = item.main_image ? `${BASE_URL}${item.main_image}` : null;
 
   return (
