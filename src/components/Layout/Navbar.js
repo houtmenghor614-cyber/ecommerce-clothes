@@ -90,7 +90,7 @@ const Navbar = () => {
               <i className="fas fa-store text-white text-sm"></i>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Menghor STORE
+              DYNA STORE
             </span>
           </Link>
 

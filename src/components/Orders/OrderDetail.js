@@ -14,7 +14,7 @@ const OrderDetail = () => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [paymentDetected, setPaymentDetected] = useState(false);
 
-  const BASE_URL = 'http://127.0.0.1:8000';
+  const BASE_URL = 'https://backend-ecommerce-6hef.onrender.com';
 
   const loadOrder = useCallback(async () => {
     try {
@@ -39,7 +39,7 @@ const OrderDetail = () => {
   // Auto-check payment status every 3 seconds
   useEffect(() => {
     if (!order || order.status !== 'pending') return;
-    
+
     let isMounted = true;
     let checkCount = 0;
     const maxChecks = 20;
